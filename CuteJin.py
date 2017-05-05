@@ -2,13 +2,29 @@ import sys
 from telegram.ext import Updater
 from telegram.ext import CommandHandler
 from telegram.ext import MessageHandler, Filters
+from telegram import replykeyboardmarkup
+from telegram import replykeyboardremove
 import logging
 from datetime import date
 
-TOKEN = sys.argv[1]  # get token from command-line
-
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG,
                     filename="logs/CutieJinny." + str(date.today()) + ".log")
+
+TOKEN = sys.argv[1]  # get token from command-line
+file_name = sys.argv[2]
+# photo_path = ""
+
+def send_photo(bot, update):
+    with open(file=file_name, mode='r') as f:
+        line = f.read()
+    f.close()
+    photo_path = line.strip()
+
+    logging.info("photo_path : {}".format(photo_path))
+
+    bot.sendPhoto(chat_id=update.message.chat_id, photo=open(photo_path, 'rb'))
+
+
 
 updater = Updater(token=TOKEN)
 dispatcher = updater.dispatcher
@@ -45,17 +61,26 @@ def restricted(func):
         return func(bot, update, *args, **kwargs)
     return wrapped
 
-def start(bot, update):
-    bot.sendMessage(chat_id=update.message.chat_id, text="你好，這是可愛小 Jinny Telegram 機械人。")
+markup = replykeyboardmarkup.ReplyKeyboardMarkup(keyboard=[["猩相"],["換相"]])
 
 @restricted
-def echo(bot, update):
-    bot.sendMessage(chat_id=update.message.chat_id, text="跟人講：" + update.message.text)
+def start(bot, update):
+    bot.sendMessage(chat_id=update.message.chat_id, text="你好，這是可愛小 Jinny Telegram 機械人。",
+                    reply_markup=markup)
+
+@restricted
+def handleMsg(bot, update):
+    if(update.message.text == "猩相"):
+        send_photo(bot=bot, update=update)
+        # bot.sendPhoto(chat_id=update.message.chat_id, photo=open(photo_path, 'rb'))
+        bot.sendMessage(chat_id=update.message.chat_id, text="SENT", reply_markup=markup)
+    else:
+        bot.sendMessage(chat_id=update.message.chat_id, text="跟人講：" + update.message.text, reply_markup=markup)
 
 start_handler = CommandHandler('start', start)
 dispatcher.add_handler(start_handler)
 
-echo_handler = MessageHandler(Filters.text, echo)
+echo_handler = MessageHandler(Filters.text, handleMsg)
 dispatcher.add_handler(echo_handler)
 
 updater.start_polling()
