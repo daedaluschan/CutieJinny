@@ -7,6 +7,7 @@ from telegram import replykeyboardmarkup
 from telegram import replykeyboardremove
 import logging
 from datetime import date
+from re import compile, match
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG,
                     filename="logs/CutieJinny." + str(date.today()) + ".log")
@@ -14,7 +15,6 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 TOKEN = sys.argv[1]  # get token from command-line
 file_name = sys.argv[2]
 photo_base_dir = sys.argv[3]
-# photo_path = ""
 
 def send_photo(bot, update):
     with open(file=file_name, mode='r') as f:
@@ -109,6 +109,11 @@ def handleMsg(bot, update):
                 f.write(picked_photo)
 
             send_photo(bot=bot, update=update)
+
+            photo_desc = compile('.*\/(\d\d\d\d_\d\d_\d\d\@Day\d+)\/.*').match(picked_photo).group(1)
+            logging.info("Photo_info: {}".format(photo_desc))
+            bot.sendMessage(chat_id=update.message.chat_id, text="INFO: {}".format(photo_desc))
+
         except(ValueError):
             bot.sendMessage(chat_id=update.message.chat_id, text="Load 唔到相呀。再試過啦。")
     else:
