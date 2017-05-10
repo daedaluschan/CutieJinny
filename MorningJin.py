@@ -60,7 +60,7 @@ try:
     with open(file_name, mode='w') as f:
         f.write(picked_photo)
 
-    photo_desc = compile('.*\/(\d\d\d\d_\d\d_\d\d\@Day\d+)\/.*').match(picked_photo).group(1)
+    photo_desc = compile('.*\/(\d\d\d\d_\d\d_\d\d\@Day[^/]+)\/.*').match(picked_photo).group(1)
     logging.info("Photo_info: {}".format(photo_desc))
 
     for admin_id in LIST_OF_ADMINS:

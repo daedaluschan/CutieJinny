@@ -110,7 +110,7 @@ def handleMsg(bot, update):
 
             send_photo(bot=bot, update=update)
 
-            photo_desc = compile('.*\/(\d\d\d\d_\d\d_\d\d\@Day\d+)\/.*').match(picked_photo).group(1)
+            photo_desc = compile('.*\/(\d\d\d\d_\d\d_\d\d\@Day[^/]+)\/.*').match(picked_photo).group(1)
             logging.info("Photo_info: {}".format(photo_desc))
             bot.sendMessage(chat_id=update.message.chat_id, text="INFO: {}".format(photo_desc))
 
