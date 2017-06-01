@@ -6,11 +6,19 @@ from telegram.ext import MessageHandler, Filters
 from telegram import replykeyboardmarkup
 from telegram import replykeyboardremove
 import logging
+from logging.handlers import RotatingFileHandler
 from datetime import date
 from re import compile, match
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG,
-                    filename="logs/CutieJinny." + str(date.today()) + ".log")
+log_file_size_lmt = 10485760
+log_file_count_lmt = 5
+
+handler =  RotatingFileHandler(filename="logs/CutieJinny.log", maxBytes=log_file_size_lmt, backupCount=log_file_count_lmt)
+handler.setFormatter(logging.Formatter('%(asctime)s | %(name)s | %(levelname)s | %(message)s'))
+
+logging.getLogger().addHandler(handler)
+logging.getLogger().setLevel(logging.DEBUG)
+
 
 TOKEN = sys.argv[1]  # get token from command-line
 file_name = sys.argv[2]
