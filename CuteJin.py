@@ -83,6 +83,11 @@ def start(bot, update):
                     reply_markup=markup)
 
 def pick_photo_to_send(bot, to_list):
+
+    num_folders = len(photo_base_dir_list)
+    picked_base_dir_index = randint(0, num_folders - 1)
+    photo_base_dir = photo_base_dir_list[picked_base_dir_index]
+
     try:
         dir_list = get_immediate_subdirectories(photo_base_dir)
         size = len(dir_list)
