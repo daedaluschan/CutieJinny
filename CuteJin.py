@@ -9,6 +9,14 @@ import logging
 from logging.handlers import RotatingFileHandler
 from datetime import date, time
 from re import compile, match
+
+import requests
+import json
+from random import seed
+from urllib import parse
+import pathlib
+from os.path import basename
+
 from CuteJin_cfg import *
 
 handler =  RotatingFileHandler(filename="logs/CutieJinny.log", maxBytes=log_file_size_lmt, backupCount=log_file_count_lmt)
