@@ -19,6 +19,11 @@ from os.path import basename
 
 from CuteJin_cfg import *
 
+seed()
+application = 'FileStation'
+login_api = 'auth.cgi?api=SYNO.API.Auth'
+logout_api = 'auth.cgi?api=SYNO.API.Auth'
+
 handler =  RotatingFileHandler(filename="logs/CutieJinny.log", maxBytes=log_file_size_lmt, backupCount=log_file_count_lmt)
 handler.setFormatter(logging.Formatter('%(asctime)s | %(name)s | %(levelname)s | %(message)s'))
 
@@ -67,9 +72,9 @@ def restricted(func):
                         logging.info("No user_id available in update.")
                         return
         if user_id not in LIST_OF_ADMINS:
-            print("唔識你（{}），唔同你講嘢。".format(user_id))
-            logging.info("唔識你（{}），唔同你講嘢。".format(user_id))
-            bot.sendMessage(chat_id=update.message.chat_id, text="唔識你，唔同你講嘢。")
+            print(trc_invalid_id % user_id)
+            logging.info(trc_invalid_id % user_id)
+            bot.sendMessage(chat_id=update.message.chat_id, text=msg_invalid_id)
             return
         return func(bot, update, *args, **kwargs)
     return wrapped
@@ -87,7 +92,8 @@ markup = replykeyboardmarkup.ReplyKeyboardMarkup(keyboard=kb_start)
 
 @restricted
 def start(bot, update):
-    bot.sendMessage(chat_id=update.message.chat_id, text="你好，這是可愛小 Jinny Telegram 機械人。",
+    bot.sendMessage(chat_id=update.message.chat_id, 
+                    text=msg_welcome,
                     reply_markup=markup)
 
 def pick_photo_to_send(bot, to_list):
@@ -128,6 +134,88 @@ def pick_photo_to_send(bot, to_list):
     except(ValueError):
         for recipient in to_list:
             bot.sendMessage(chat_id=recipient, text="Load 唔到相呀。再試過啦。")
+
+def request_data(sid, api_name, api_path, req_param, method=None, response_json=True):  
+    # 'post' or 'get' 
+    
+    # Convert all booleen in string in lowercase because Synology API is waiting for "true" or "false"
+    for k,v in req_param.items():
+        if isinstance(v, bool):
+            req_param[k] = str(v).lower()
+
+    if method is None:
+        method = 'get'
+
+    req_param['_sid'] = sid
+
+    if method is 'get':
+        url = ('%s%s' % (base_url, api_path)) + '?api=' + api_name
+        response = requests.get(url, req_param, verify=False)
+
+        if response_json is True:
+            return response.json()
+        else:
+            return response
+
+    elif method is 'post':
+        url = ('%s%s' % (base_url, api_path)) + '?api=' + api_name
+        response = requests.post(url, req_param, verify=False)
+
+        if response_json is True:
+            return response.json()
+        else:
+            return response
+
+
+def sendNasPhoto(bot, to_list):
+    
+    # Login 
+
+    param = {'version': '2', 
+            'method': 'login', 
+            'account': usernmae,
+            'passwd': pwd, 
+            'session': application, 
+            'format': 'cookie'}
+
+    session_request = requests.get(base_url + login_api, param, verify=False)
+    sid = session_request.json()['data']['sid']
+
+    logging.info('Login compelted')
+    logging.info('sid: %s' % sid)
+    logging.info(session_request.json())
+
+    # Get full api list
+
+    query_path = 'query.cgi?api=SYNO.API.Info'
+    list_query = {'version': '1', 
+                'method': 'query', 
+                'query': 'all'}
+    full_api_list = requests.get(base_url + query_path, list_query, verify=False).json()['data']
+
+    #list folders
+
+    api_name = 'SYNO.FileStation.List'
+    info = full_api_list[api_name]
+    api_path = info['path']
+    req_param = {'version': info['maxVersion'], 
+                'method': 'list',
+                'folder_path': '%s%s' % (path_prefix, randint(int(start_y), int(end_y))) }
+
+    response_file_list = request_data(sid, api_name, api_path, req_param)['data']['files']
+    # print(json.dumps(response_file_list, indent=4))
+    logging.info('list of folders of length: %s' % len(response_file_list))
+
+    req_param['folder_path'] = response_file_list[randint(0,len(response_file_list)-1)]['path']
+    response_file_list = request_data(sid, api_name, api_path, req_param)['data']['files']
+    # print(json.dumps(response_file_list, indent=4))
+
+    req_param['folder_path'] = response_file_list[randint(0,len(response_file_list)-1)]['path']
+    response_file_list = request_data(sid, api_name, api_path, req_param)['data']['files']
+    # print(json.dumps(response_file_list, indent=4))
+
+    file_download = response_file_list[randint(0,len(response_file_list)-1)]['path']
+    print('File to be downloaded : %s' % file_download)
 
 
 @restricted
