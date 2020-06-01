@@ -83,7 +83,7 @@ def get_all_jpg(a_dir):
     return [name for name in os.listdir(a_dir)
             if os.path.join(a_dir, name).endswith(".JPG")]
 
-markup = replykeyboardmarkup.ReplyKeyboardMarkup(keyboard=[["猩相"],["換相"]])
+markup = replykeyboardmarkup.ReplyKeyboardMarkup(keyboard=kb_start)
 
 @restricted
 def start(bot, update):

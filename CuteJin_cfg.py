@@ -17,3 +17,6 @@ schedule_time_hh_2 = 15
 schedule_time_mm_2 = 15
 
 msg_daily_photo = "今日靚相精選：{}"
+
+btn_send_photo = 'Send 相'
+kb_start = [[btn_send_photo]]
