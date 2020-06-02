@@ -23,10 +23,11 @@ LIST_OF_ADMINS = os.environ['ADMIN_LIST'].split(',')
 file_name = ""
 photo_base_dir = ""
 
-schedule_time_hh_1 = 10
+#Timezone are in GMT by default
+schedule_time_hh_1 = 23
 schedule_time_mm_1 = 00
 
-schedule_time_hh_2 = 15
+schedule_time_hh_2 = 11
 schedule_time_mm_2 = 15
 
 msg_daily_photo = "今日靚相精選：%s"
