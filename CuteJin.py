@@ -24,6 +24,10 @@ application = 'FileStation'
 login_api = 'auth.cgi?api=SYNO.API.Auth'
 logout_api = 'auth.cgi?api=SYNO.API.Auth'
 
+logs_folder = pathlib.Path(__file__).parent.absolute().__str__() + '/logs/'
+pathlib.Path(logs_folder).mkdir(parents=True, exist_ok=True)
+this_file=__file__
+
 handler =  RotatingFileHandler(filename="logs/CutieJinny.log", maxBytes=log_file_size_lmt, backupCount=log_file_count_lmt)
 handler.setFormatter(logging.Formatter('%(asctime)s | %(name)s | %(levelname)s | %(message)s'))
 
@@ -71,7 +75,7 @@ def restricted(func):
                         print("No user_id available in update.")
                         logging.info("No user_id available in update.")
                         return
-        if user_id not in LIST_OF_ADMINS:
+        if user_id.__str__() not in LIST_OF_ADMINS:
             print(trc_invalid_id % user_id)
             logging.info(trc_invalid_id % user_id)
             bot.sendMessage(chat_id=update.message.chat_id, text=msg_invalid_id)
@@ -221,11 +225,11 @@ def sendNasPhoto(bot, to_list):
         file_download = response_file_list[randint(0,len(response_file_list)-1)]['path']
 
         if file_download.upper().endswith('.JPG') or file_download.upper().endswith('.JPEG'):
-            looging.Info('File to be downloaded : %s' % file_download)
+            logging.info('File to be downloaded : %s' % file_download)
             file_name = basename(file_download)
             break
 
-    if file name == '':
+    if file_name == '':
         for recipient in to_list:
             bot.sendMessage(chat_id=recipient, text=msg_no_photo)
     else:
@@ -233,36 +237,47 @@ def sendNasPhoto(bot, to_list):
         info = full_api_list[api_name]
         api_path = info['path']
         
-        save_folder = pathlib.Path(__file__).parent.absolute().__str__() + '/photo/'
+        save_folder = pathlib.Path(this_file).parent.absolute().__str__() + '/photo/'
         pathlib.Path(save_folder).mkdir(parents=True, exist_ok=True)
         save_path = save_folder + file_name
 
         session = requests.session()
-        url = ('%s%s' % (base_url, api_path)) 
-                + '?api=%s&version=%s&method=download&path=%s&mode=download&_sid=%s' 
-                % (api_name, info['maxVersion'], parse.quote_plus(file_download), sid)
+        url = ('%s%s' % (base_url, api_path)) \
+            + '?api=%s&version=%s&method=download&path=%s&mode=download&_sid=%s' \
+            % (api_name, info['maxVersion'], parse.quote_plus(file_download), sid)
 
+        logging.info('url : %s' % url)
+        
         with session.get(url, stream=True, verify=False) as r:
             r.raise_for_status()
-            with open(basename(save_path), 'wb') as f:
+            logging.info('save_path: %s' % basename(save_path))
+            with open(save_path, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     if chunk:  # filter out keep-alive new chunks
                         f.write(chunk)
 
+        photo_desc = file_download.split('/')[-3]
+
+        for recipient in to_list:
+            bot.sendPhoto(chat_id=recipient, photo=open(save_path, 'rb'))
+            bot.sendMessage(chat_id=recipient, text=msg_daily_photo % photo_desc)
+
+
 
 @restricted
 def handleMsg(bot, update):
-    if(update.message.text == "猩相"):
-        send_photo(bot=bot, recipient=update.message.from_user.id)
+    if(update.message.text == btn_send_photo):
+        sendNasPhoto(bot=bot, to_list=LIST_OF_ADMINS)
+        # send_photo(bot=bot, recipient=update.message.from_user.id)
         # bot.sendPhoto(chat_id=update.message.chat_id, photo=open(photo_path, 'rb'))
-        bot.sendMessage(chat_id=update.message.chat_id, text="SENT", reply_markup=markup)
-    elif(update.message.text == "換相"):
-        pick_photo_to_send(bot=bot, to_list=[update.message.from_user.id])
+        # bot.sendMessage(chat_id=update.message.chat_id, text="SENT", reply_markup=markup)
+    # elif(update.message.text == "換相"):
+        # pick_photo_to_send(bot=bot, to_list=[update.message.from_user.id])
     else:
         bot.sendMessage(chat_id=update.message.chat_id, text="跟人講：" + update.message.text, reply_markup=markup)
 
 def daily_photo(bot, job):
-    pick_photo_to_send(bot=bot, to_list=LIST_OF_ADMINS)
+    sendNasPhoto(bot=bot, to_list=LIST_OF_ADMINS)
 
 
 jq = updater.job_queue

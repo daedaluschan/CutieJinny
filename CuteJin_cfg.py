@@ -35,3 +35,4 @@ kb_start = [[btn_send_photo]]
 trc_invalid_id = 'Invalid user id : %s'
 msg_invalid_id = '唔識你，唔同你講嘢。'
 msg_welcome = '你好，這是可愛小 Jinny Telegram 機械人。'
+msg_no_photo = 'Load 唔到相呀。再試過啦。'
