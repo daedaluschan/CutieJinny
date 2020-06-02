@@ -8,7 +8,6 @@ from telegram import replykeyboardremove
 import logging
 from logging.handlers import RotatingFileHandler
 from datetime import date, time
-from re import compile, match
 
 import requests
 import json
@@ -33,23 +32,6 @@ handler.setFormatter(logging.Formatter('%(asctime)s | %(name)s | %(levelname)s |
 
 logging.getLogger().addHandler(handler)
 logging.getLogger().setLevel(logging.DEBUG)
-
-
-# TOKEN = sys.argv[1]  # get token from command-line
-# file_name = sys.argv[2]
-# photo_base_dir = sys.argv[3]
-
-def send_photo(bot, recipient):
-    with open(file=file_name, mode='r') as f:
-        line = f.read()
-    f.close()
-    photo_path = line.strip()
-
-    logging.info("photo_path : {}".format(photo_path))
-
-    bot.sendPhoto(chat_id=recipient, photo=open(photo_path, 'rb'))
-
-
 
 updater = Updater(token=TOKEN)
 dispatcher = updater.dispatcher
@@ -83,14 +65,7 @@ def restricted(func):
         return func(bot, update, *args, **kwargs)
     return wrapped
 
-# util for getting immediate sub-directories
-def get_immediate_subdirectories(a_dir):
-    return [name for name in os.listdir(a_dir)
-            if os.path.isdir(os.path.join(a_dir, name))]
 
-def get_all_jpg(a_dir):
-    return [name for name in os.listdir(a_dir)
-            if os.path.join(a_dir, name).endswith(".JPG")]
 
 markup = replykeyboardmarkup.ReplyKeyboardMarkup(keyboard=kb_start)
 
@@ -99,45 +74,6 @@ def start(bot, update):
     bot.sendMessage(chat_id=update.message.chat_id, 
                     text=msg_welcome,
                     reply_markup=markup)
-
-def pick_photo_to_send(bot, to_list):
-
-    num_folders = len(photo_base_dir_list)
-    picked_base_dir_index = randint(0, num_folders - 1)
-    photo_base_dir = photo_base_dir_list[picked_base_dir_index]
-
-    try:
-        dir_list = get_immediate_subdirectories(photo_base_dir)
-        size = len(dir_list)
-        picked_index = randint(0, size - 1)
-        picked_dir = photo_base_dir + "/" + dir_list[picked_index]
-        logging.info("Picked Dir : {}".format(picked_dir))
-
-        sub_dir_list = get_immediate_subdirectories(picked_dir)
-        sub_dir_size = len(sub_dir_list)
-        picked_sub_index = randint(0, sub_dir_size - 1)
-        picked_sub_dir = picked_dir + "/" + sub_dir_list[picked_sub_index]
-        logging.info("Picked Sub Dir : {}".format(picked_sub_dir))
-
-        photo_list = get_all_jpg(picked_sub_dir)
-        num_of_photo = len(photo_list)
-        picked_photo_index = randint(0, num_of_photo - 1)
-        picked_photo = picked_sub_dir + "/" + photo_list[picked_photo_index]
-        logging.info("Picked PHOTO : {}".format(picked_photo))
-
-        with open(file_name, mode='w') as f:
-            f.write(picked_photo)
-
-        photo_desc = compile('.*\/(\d\d\d\d_\d\d_\d\d\@Day[^/]+)\/.*').match(picked_photo).group(1)
-        logging.info("Photo_info: {}".format(photo_desc))
-
-        for recipient in to_list:
-            send_photo(bot=bot, recipient=recipient)
-            bot.sendMessage(chat_id=recipient, text=msg_daily_photo.format(photo_desc))
-
-    except(ValueError):
-        for recipient in to_list:
-            bot.sendMessage(chat_id=recipient, text="Load 唔到相呀。再試過啦。")
 
 def request_data(sid, api_name, api_path, req_param, method=None, response_json=True):  
     # 'post' or 'get' 
@@ -174,7 +110,6 @@ def request_data(sid, api_name, api_path, req_param, method=None, response_json=
 def sendNasPhoto(bot, to_list):
     
     # Login 
-
     param = {'version': '2', 
             'method': 'login', 
             'account': usernmae,
@@ -190,7 +125,6 @@ def sendNasPhoto(bot, to_list):
     logging.info(session_request.json())
 
     # Get full api list
-
     query_path = 'query.cgi?api=SYNO.API.Info'
     list_query = {'version': '1', 
                 'method': 'query', 
@@ -198,7 +132,6 @@ def sendNasPhoto(bot, to_list):
     full_api_list = requests.get(base_url + query_path, list_query, verify=False).json()['data']
 
     #list folders
-
     api_name = 'SYNO.FileStation.List'
     info = full_api_list[api_name]
     api_path = info['path']
@@ -207,16 +140,13 @@ def sendNasPhoto(bot, to_list):
                 'folder_path': '%s%s' % (path_prefix, randint(int(start_y), int(end_y))) }
 
     response_file_list = request_data(sid, api_name, api_path, req_param)['data']['files']
-    # print(json.dumps(response_file_list, indent=4))
     logging.info('list of folders of length: %s' % len(response_file_list))
 
     req_param['folder_path'] = response_file_list[randint(0,len(response_file_list)-1)]['path']
     response_file_list = request_data(sid, api_name, api_path, req_param)['data']['files']
-    # print(json.dumps(response_file_list, indent=4))
 
     req_param['folder_path'] = response_file_list[randint(0,len(response_file_list)-1)]['path']
     response_file_list = request_data(sid, api_name, api_path, req_param)['data']['files']
-    # print(json.dumps(response_file_list, indent=4))
 
     file_download=''
     file_name=''
@@ -280,11 +210,6 @@ def cleanup(folder):
 def handleMsg(bot, update):
     if(update.message.text == btn_send_photo):
         sendNasPhoto(bot=bot, to_list=LIST_OF_ADMINS)
-        # send_photo(bot=bot, recipient=update.message.from_user.id)
-        # bot.sendPhoto(chat_id=update.message.chat_id, photo=open(photo_path, 'rb'))
-        # bot.sendMessage(chat_id=update.message.chat_id, text="SENT", reply_markup=markup)
-    # elif(update.message.text == "換相"):
-        # pick_photo_to_send(bot=bot, to_list=[update.message.from_user.id])
     else:
         bot.sendMessage(chat_id=update.message.chat_id, text="跟人講：" + update.message.text, reply_markup=markup)
 

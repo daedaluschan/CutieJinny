@@ -17,8 +17,6 @@ base_url = 'https://%s:%s/webapi/' % (ip, port)
 
 TOKEN = os.environ['CUTE_TOKEN']
 LIST_OF_ADMINS = os.environ['ADMIN_LIST'].split(',')
-#LIST_OF_ADMINS = os.environ['SUPER_ADMIN']
-
 
 file_name = ""
 photo_base_dir = ""
