@@ -214,8 +214,40 @@ def sendNasPhoto(bot, to_list):
     response_file_list = request_data(sid, api_name, api_path, req_param)['data']['files']
     # print(json.dumps(response_file_list, indent=4))
 
-    file_download = response_file_list[randint(0,len(response_file_list)-1)]['path']
-    print('File to be downloaded : %s' % file_download)
+    file_download=''
+    file_name=''
+
+    for i in range(1,3):
+        file_download = response_file_list[randint(0,len(response_file_list)-1)]['path']
+
+        if file_download.upper().endswith('.JPG') or file_download.upper().endswith('.JPEG'):
+            looging.Info('File to be downloaded : %s' % file_download)
+            file_name = basename(file_download)
+            break
+
+    if file name == '':
+        for recipient in to_list:
+            bot.sendMessage(chat_id=recipient, text=msg_no_photo)
+    else:
+        api_name = 'SYNO.FileStation.Download'
+        info = full_api_list[api_name]
+        api_path = info['path']
+        
+        save_folder = pathlib.Path(__file__).parent.absolute().__str__() + '/photo/'
+        pathlib.Path(save_folder).mkdir(parents=True, exist_ok=True)
+        save_path = save_folder + file_name
+
+        session = requests.session()
+        url = ('%s%s' % (base_url, api_path)) 
+                + '?api=%s&version=%s&method=download&path=%s&mode=download&_sid=%s' 
+                % (api_name, info['maxVersion'], parse.quote_plus(file_download), sid)
+
+        with session.get(url, stream=True, verify=False) as r:
+            r.raise_for_status()
+            with open(basename(save_path), 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:  # filter out keep-alive new chunks
+                        f.write(chunk)
 
 
 @restricted
