@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, shutil
 from random import  randint
 from telegram.ext import Updater
 from telegram.ext import CommandHandler
@@ -259,10 +259,22 @@ def sendNasPhoto(bot, to_list):
         photo_desc = file_download.split('/')[-3]
 
         for recipient in to_list:
+            logging.info('chat id: %s' % recipient)
             bot.sendPhoto(chat_id=recipient, photo=open(save_path, 'rb'))
-            bot.sendMessage(chat_id=recipient, text=msg_daily_photo % photo_desc)
+            bot.sendMessage(chat_id=recipient, text=msg_daily_photo % str(photo_desc))
+        
+        cleanup(save_folder)
 
-
+def cleanup(folder):
+    for filename in os.listdir(folder):
+        file_path = os.path.join(folder, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            logging.info('Failed to delete %s. Reason: %s' % (file_path, e))
 
 @restricted
 def handleMsg(bot, update):
