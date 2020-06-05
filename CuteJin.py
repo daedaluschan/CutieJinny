@@ -1,10 +1,11 @@
 import sys, os, shutil
 from random import  randint
 from telegram.ext import Updater
-from telegram.ext import CommandHandler
+from telegram.ext import CommandHandler, CallbackQueryHandler
 from telegram.ext import MessageHandler, Filters
 from telegram import replykeyboardmarkup
 from telegram import replykeyboardremove
+from telegram.inline import inlinekeyboardbutton, inlinekeyboardmarkup
 import logging
 from logging.handlers import RotatingFileHandler
 from datetime import date, time
@@ -107,7 +108,7 @@ def request_data(sid, api_name, api_path, req_param, method=None, response_json=
             return response
 
 
-def sendNasPhoto(bot, to_list):
+def sendNasPhoto(bot, to_list, given_folder=None):
     
     # Login 
     param = {'version': '2', 
@@ -139,10 +140,14 @@ def sendNasPhoto(bot, to_list):
                 'method': 'list',
                 'folder_path': '%s%s' % (path_prefix, randint(int(start_y), int(end_y))) }
 
-    response_file_list = request_data(sid, api_name, api_path, req_param)['data']['files']
-    logging.info('list of folders of length: %s' % len(response_file_list))
+    if given_folder == None:
+        response_file_list = request_data(sid, api_name, api_path, req_param)['data']['files']
+        logging.info('list of folders of length: %s' % len(response_file_list))
 
-    req_param['folder_path'] = response_file_list[randint(0,len(response_file_list)-1)]['path']
+        req_param['folder_path'] = response_file_list[randint(0,len(response_file_list)-1)]['path']
+    else:
+        req_param['folder_path'] = given_folder
+    
     response_file_list = request_data(sid, api_name, api_path, req_param)['data']['files']
 
     req_param['folder_path'] = response_file_list[randint(0,len(response_file_list)-1)]['path']
@@ -189,9 +194,17 @@ def sendNasPhoto(bot, to_list):
         photo_desc = file_download.split('/')[-3]
 
         for recipient in to_list:
+            download_folder = parse.quote_plus(str(pathlib.Path(file_download).parent.parent.absolute()))
+            logging.info('download_folder: %s' % download_folder)
+            inline_button = inlinekeyboardbutton.InlineKeyboardButton(btn_more_that_day, 
+                                                                    callback_data=download_folder)
+            reply_markup=inlinekeyboardmarkup.InlineKeyboardMarkup([[inline_button]])
+            
             logging.info('chat id: %s' % recipient)
             bot.sendPhoto(chat_id=recipient, photo=open(save_path, 'rb'))
-            bot.sendMessage(chat_id=recipient, text=msg_daily_photo % str(photo_desc))
+            bot.sendMessage(chat_id=recipient, 
+                            text=msg_daily_photo % str(photo_desc), 
+                            reply_markup=reply_markup)
         
         cleanup(save_folder)
 
@@ -205,6 +218,16 @@ def cleanup(folder):
                 shutil.rmtree(file_path)
         except Exception as e:
             logging.info('Failed to delete %s. Reason: %s' % (file_path, e))
+
+@restricted 
+def handle_cb(bot, update):
+
+    logging.info("Entering handle_cb()")
+
+    given_folder = parse.unquote_plus(str(update.callback_query["data"]))
+    logging.info('given_folder: %s' % given_folder)
+
+    sendNasPhoto(bot, to_list=LIST_OF_ADMINS, given_folder=given_folder)
 
 @restricted
 def handleMsg(bot, update):
@@ -226,5 +249,8 @@ dispatcher.add_handler(start_handler)
 
 echo_handler = MessageHandler(Filters.text, handleMsg)
 dispatcher.add_handler(echo_handler)
+
+cb_handler = CallbackQueryHandler(handle_cb)
+dispatcher.add_handler(cb_handler)
 
 updater.start_polling(timeout=30)
