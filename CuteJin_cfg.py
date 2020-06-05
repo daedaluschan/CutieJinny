@@ -39,3 +39,5 @@ msg_welcome = '你好，這是可愛小 Jinny Telegram 機械人。'
 msg_no_photo = 'Load 唔到相呀。再試過啦。'
 
 btn_more_that_day = '更多同日相片'
+
+msg_date_no_photo = '呢一日冇相喎：%s'
