@@ -16,6 +16,7 @@ from random import seed
 from urllib import parse
 import pathlib
 from os.path import basename
+from re import match, compile
 
 from CuteJin_cfg import *
 
@@ -108,7 +109,7 @@ def request_data(sid, api_name, api_path, req_param, method=None, response_json=
             return response
 
 
-def sendNasPhoto(bot, to_list, given_folder=None):
+def sendNasPhoto(bot, to_list, given_folder=None, given_date=None):
     
     # Login 
     param = {'version': '2', 
@@ -132,19 +133,40 @@ def sendNasPhoto(bot, to_list, given_folder=None):
                 'query': 'all'}
     full_api_list = requests.get(base_url + query_path, list_query, verify=False).json()['data']
 
+    year_to_pick = None
+    if given_date is None:
+        year_to_pick = randint(int(start_y), int(end_y))
+    else:
+        year_to_pick = given_date.year
+
+    
     #list folders
     api_name = 'SYNO.FileStation.List'
     info = full_api_list[api_name]
     api_path = info['path']
     req_param = {'version': info['maxVersion'], 
                 'method': 'list',
-                'folder_path': '%s%s' % (path_prefix, randint(int(start_y), int(end_y))) }
+                'folder_path': '%s%s' % (path_prefix, year_to_pick) }
 
     if given_folder == None:
         response_file_list = request_data(sid, api_name, api_path, req_param)['data']['files']
         logging.info('list of folders of length: %s' % len(response_file_list))
 
-        req_param['folder_path'] = response_file_list[randint(0,len(response_file_list)-1)]['path']
+        if given_date is None:
+            req_param['folder_path'] = response_file_list[randint(0,len(response_file_list)-1)]['path']
+        else:
+            folder_prefix = str(given_date.year) \
+                            + '_' + str(given_date.month).zfill(2) \
+                            + '_' + str(given_date.day).zfill(2)
+            for index, folder in enumerate(response_file_list):
+                if folder_prefix in folder['path']:
+                    req_param['folder_path'] = folder['path']
+                    break
+                elif index == len(response_file_list)-1:
+                    for recipient in to_list:
+                        bot.sendMessage(chat_id=recipient, text=msg_date_no_photo % folder_prefix)
+                    return
+
     else:
         req_param['folder_path'] = given_folder
     
@@ -233,6 +255,20 @@ def handle_cb(bot, update):
 def handleMsg(bot, update):
     if(update.message.text == btn_send_photo):
         sendNasPhoto(bot=bot, to_list=LIST_OF_ADMINS)
+    elif compile('(\d{8})').match(update.message.text) is not None:
+        match_obj = compile('(\d{8})').match(update.message.text)
+        in_str = match_obj.group(1)
+        logging.info('in_str: %s' % in_str)
+        date_str = ''
+        
+        for charact in in_str:
+            if charact.isdigit():
+                date_str = date_str + charact
+        
+        logging.info('date_str: %s' % date_str)
+        theDate = date(int(date_str[0:4]),int(date_str[4:6]),int(date_str[6:8]))
+
+        sendNasPhoto(bot, LIST_OF_ADMINS, given_date=theDate)
     else:
         bot.sendMessage(chat_id=update.message.chat_id, text="跟人講：" + update.message.text, reply_markup=markup)
 
