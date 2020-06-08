@@ -17,6 +17,8 @@ from urllib import parse
 import pathlib
 from os.path import basename
 from re import match, compile
+from PIL import Image, ExifTags
+from resizeimage import resizeimage
 
 from CuteJin_cfg import *
 
@@ -214,7 +216,40 @@ def sendNasPhoto(bot, to_list, given_folder=None, given_date=None):
                         f.write(chunk)
 
         photo_desc = file_download.split('/')[-3]
+        file_size = os.path.getsize(save_path)
+        logging.info('file size: %s' % file_size)
 
+        if file_size > file_size_limit:
+            logging.info('Resizing...')
+            with open(save_path, 'r+b') as f:
+                with Image.open(f) as image:
+                    if hasattr(image, '_getexif'):
+                        exif = image._getexif()
+                        if exif:
+                            for tag, label in ExifTags.TAGS.items():
+                                if label == 'Orientation':
+                                    orientation = tag
+                                    break
+                            
+                            if orientation in exif:
+                                if exif[orientation] == 3:
+                                    image = image.rotate(180, expand=True)
+                                elif exif[orientation] == 6:
+                                    image = image.rotate(270, expand=True)
+                                elif exif[orientation] == 8:
+                                    image = image.rotate(90, expand=True)
+                    
+                    if image.size[0] > image.size[1]:
+                        new_H = target_pixel_L
+                        new_W = int((target_pixel_L / image.size[0]) * image.size[1])
+                    else:
+                        new_W = target_pixel_L
+                        new_H = int((target_pixel_L / image.size[1]) * image.size[0])
+                    
+                    image = resizeimage.resize_thumbnail(image, [new_H, new_W])
+                    image.save(save_path)
+        
+        
         for recipient in to_list:
             download_folder = parse.quote_plus(str(pathlib.Path(file_download).parent.parent.absolute()))
             logging.info('download_folder: %s' % download_folder)
