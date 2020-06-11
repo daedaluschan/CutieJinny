@@ -1,0 +1,19 @@
+version: '3'
+services:
+    cute-jinny:
+        build: .
+        container_name: cute-jinny
+        environment:
+            CUTE_TOKEN:
+            ADMIN_LIST:
+            JIN_FROM_YYYY:
+            JIN_TO_YYYY:
+            NAS_PHOTO_PREFIX:
+            NAS_IP:
+            NAS_PORT:
+            NAS_USR:
+            NAS_PWD:
+        command: >
+            bash -c "ln -snf /usr/share/zoneinfo/Asia/Hong_Kong /etc/localtime && 
+            echo Asia/Hong_Kong > /etc/timezone &&
+            python ./CuteJin.py"

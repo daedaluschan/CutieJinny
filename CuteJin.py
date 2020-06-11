@@ -111,7 +111,7 @@ def request_data(sid, api_name, api_path, req_param, method=None, response_json=
             return response
 
 
-def sendNasPhoto(bot, to_list, given_folder=None, given_date=None):
+def sendNasPhoto(bot, to_list, given_folder=None, given_date=None, msg=None):
     
     # Login 
     param = {'version': '2', 
@@ -259,8 +259,14 @@ def sendNasPhoto(bot, to_list, given_folder=None, given_date=None):
             
             logging.info('chat id: %s' % recipient)
             bot.sendPhoto(chat_id=recipient, photo=open(save_path, 'rb'))
+            
+            if msg == None:
+                text_msg = msg_daily_photo
+            else:
+                text_msg = msg
+
             bot.sendMessage(chat_id=recipient, 
-                            text=msg_daily_photo % str(photo_desc), 
+                            text=text_msg % str(photo_desc), 
                             reply_markup=reply_markup)
         
         cleanup(save_folder)
@@ -288,8 +294,15 @@ def handle_cb(bot, update):
 
 @restricted
 def handleMsg(bot, update):
-    if(update.message.text == btn_send_photo):
+    if (update.message.text == btn_send_photo):
         sendNasPhoto(bot=bot, to_list=LIST_OF_ADMINS)
+    elif (update.message.text == btn_same_day_before):
+        today = date.today()
+        year_to_pick = randint(int(start_y), int(end_y))
+        
+        picked_date = today.replace(year_to_pick, today.month, today.day)
+        logging.info('picked date: %s' % picked_date.__str__())
+        sendNasPhoto(bot=bot, to_list=LIST_OF_ADMINS, given_date=picked_date, msg=msg_same_day_before)
     elif compile('(\d{8})').match(update.message.text) is not None:
         match_obj = compile('(\d{8})').match(update.message.text)
         in_str = match_obj.group(1)

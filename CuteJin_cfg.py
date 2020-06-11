@@ -29,9 +29,11 @@ schedule_time_hh_2 = 11
 schedule_time_mm_2 = 15
 
 msg_daily_photo = "今日靚相精選：%s"
+msg_same_day_before = "當年今日：%s"
 
 btn_send_photo = 'Send 相'
-kb_start = [[btn_send_photo]]
+btn_same_day_before = '當年今日'
+kb_start = [[btn_send_photo], [btn_same_day_before]]
 
 trc_invalid_id = 'Invalid user id : %s'
 msg_invalid_id = '唔識你，唔同你講嘢。'
